@@ -15,11 +15,21 @@ namespace Shop.Controllers
     [Route("users")]
     public class UserController : ControllerBase
     {
+        [HttpGet]
+        [Route("")]
+        [Authorize(Roles = "manager")]
+        public async Task<ActionResult<List<User>>> Get([FromServices] DataContext context)
+        {
+            var users = await context.Users.AsNoTracking().ToListAsync();
+            return Ok(users);
+        }
+
         [HttpPost]
         [Route("")]
         [AllowAnonymous]
-        public async Task<ActionResult<List<User>>> Post([FromBody] User model,
-            [FromServices] DataContext context)
+       // [Authorize(Roles = "manager")]
+        public async Task<ActionResult<User>> Post([FromBody] User model,
+           [FromServices] DataContext context)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
@@ -35,8 +45,35 @@ namespace Shop.Controllers
                 return BadRequest(ModelState);
             }
 
-
         }
+
+        [HttpPut]
+        [Route("{id}")]
+        public async Task<ActionResult<List<User>>> Put(int id, [FromBody] User model,
+            [FromServices] DataContext context)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            if(id != model.Id)
+                return NotFound(new { message = "Usuário não encontrado" });
+            try
+            {
+                context.Entry(model).State = EntityState.Modified;
+
+                await context.SaveChangesAsync();
+                return Ok(model);
+            }
+          
+
+            catch (Exception)
+            {
+                return BadRequest(new { message = "Não foi possível criar o usuário" });
+            }
+        }
+
+
+
         [HttpPost]
         [Route("login")]
         public async Task<ActionResult<dynamic>> Authenticate([FromBody] User model,
